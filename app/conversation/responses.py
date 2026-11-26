@@ -48,4 +48,6 @@ CRM_PENDING = ("Estoy consultando tu información en nuestros sistemas ⏳. Te l
                "por este mismo canal.")
 CRM_DEGRADED = ("Nuestro sistema de clientes está con intermitencia en este momento. Dejé tu consulta en cola y "
                 "te enviaré la respuesta apenas se restablezca. Mientras tanto, puedes revisar tu saldo en la App.")
+CRM_FAILED = ("No pude consultar tu información en este momento 😕. Puedes intentarlo en unos minutos, "
+              "revisarla en la App TelcoAustral o, si prefieres, te derivo con un ejecutivo.")
 TICKET_CREATED = " Además, registré un caso en nuestro sistema (referencia {ref}) para hacerle seguimiento."

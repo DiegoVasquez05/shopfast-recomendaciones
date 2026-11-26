@@ -92,7 +92,7 @@ def create_app(settings: Settings | None = None, *, kv=None, store=None, queue=N
 
     # --- Siebel / handoff / canales
     s.sessions = SessionService(s.kv, settings)
-    s.publisher = SiebelPublisher(s.queue, s.kv, s.store, settings.siebel_sync_wait_ms)
+    s.publisher = SiebelPublisher(s.queue, s.kv, s.store, settings.siebel_sync_wait_ms, settings.cb_recovery_s)
     if isinstance(s.queue, MemoryQueue):
         # sin broker externo, el worker corre en el mismo proceso con la MISMA lógica
         http = siebel_http or (_inprocess_siebel_http(settings) if settings.siebel_base_url == "inprocess" else None)

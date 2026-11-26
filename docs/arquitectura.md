@@ -58,8 +58,13 @@ stateDiagram-v2
 - Lecturas: timeout de 1 s, 3 reintentos con backoff exponencial (0,1 s, 0,2 s, 0,4 s).
 - Escrituras (crear caso): sin reintento inmediato. Se re-encolan con backoff (1, 2, 4 s…) y al agotar
   los intentos van a la **Dead-Letter Queue** para reprocesarlas.
-- El estado del circuito se comparte en Redis: el backend no espera un timeout si ya sabe que Siebel
-  está caído, y el dashboard lo muestra.
+- El estado del circuito y el contador de fallas viven en **Redis** (operaciones atómicas): todas las
+  réplicas del worker comparten el mismo circuito, y un candado en Redis garantiza una sola llamada de
+  prueba en estado semiabierto. El backend no espera timeouts si ya sabe que Siebel está caído, y el
+  dashboard muestra el estado.
+- Las consultas que llegan con el circuito abierto se responden al instante en modo degradado (~10 ms)
+  y quedan en cola; el worker las reintenta con backoff hasta que Siebel se recupera y entrega el
+  resultado como notificación de la sesión (lo que el bot le prometió al cliente).
 - El simulador de Siebel tiene un **modo caos** (`POST /admin/chaos`) para mostrarlo en la defensa.
 
 ## 3. Handoff a un ejecutivo

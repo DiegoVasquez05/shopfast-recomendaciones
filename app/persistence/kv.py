@@ -51,6 +51,19 @@ class MemoryKV:
             self._d.pop(key, None)
             return lst
 
+    def incr(self, key: str, ttl: int | None = None) -> int:
+        with self._lock:
+            val = int(self._alive(key) or 0) + 1
+            self._d[key] = (time.time() + ttl if ttl else None, val)
+            return val
+
+    def set_nx(self, key: str, value: Any, ttl: int) -> bool:
+        with self._lock:
+            if self._alive(key) is not None:
+                return False
+            self._d[key] = (time.time() + ttl, value)
+            return True
+
     def keys(self, prefix: str) -> list[str]:
         with self._lock:
             return [k for k in list(self._d) if k.startswith(prefix) and self._alive(k) is not None]
@@ -88,6 +101,16 @@ class RedisKV:
         p.delete(key)
         items, _ = p.execute()
         return [json.loads(x) for x in items]
+
+    def incr(self, key: str, ttl: int | None = None) -> int:
+        p = self.r.pipeline()
+        p.incr(key)
+        if ttl:
+            p.expire(key, ttl)
+        return int(p.execute()[0])
+
+    def set_nx(self, key: str, value, ttl: int) -> bool:
+        return bool(self.r.set(key, json.dumps(value), nx=True, ex=ttl))
 
     def keys(self, prefix: str) -> list[str]:
         return list(self.r.scan_iter(match=f"{prefix}*", count=500))

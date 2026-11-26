@@ -35,12 +35,17 @@ class OperationResult:
 
 
 class SiebelPublisher:
-    def __init__(self, queue, kv, store, sync_wait_ms: int = 1500):
+    def __init__(self, queue, kv, store, sync_wait_ms: int = 1500, recovery_s: float = 30.0):
         self.queue, self.kv, self.store = queue, kv, store
-        self.sync_wait_ms = sync_wait_ms
+        self.sync_wait_ms, self.recovery_s = sync_wait_ms, recovery_s
 
     def circuit_state(self) -> str:
         return read_state(self.kv).get("state", "closed")
+
+    def circuit_blocks(self) -> bool:
+        """True si el circuito está abierto y aún no se cumple el tiempo de recuperación."""
+        st = read_state(self.kv)
+        return st.get("state") == "open" and time.time() - st.get("opened_at", 0) < self.recovery_s
 
     def _publish(self, operation: str, params: dict, session_id: str, correlation_id: str, kind: str) -> str:
         corr = f"{correlation_id}:{uuid.uuid4().hex[:8]}"
@@ -52,7 +57,7 @@ class SiebelPublisher:
 
     def request(self, operation: str, params: dict, session_id: str, correlation_id: str) -> OperationResult:
         """Lectura con espera acotada."""
-        if self.circuit_state() == "open":
+        if self.circuit_blocks():
             # no se satura Siebel: igual se encola (RPO 0) pero se responde altiro en modo degradado
             corr = self._publish(operation, params, session_id, correlation_id, "read")
             self.kv.set(f"{result_key(corr)}:notify", True, RESULT_TTL)

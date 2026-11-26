@@ -29,8 +29,23 @@ make load HOST=https://<IP> USERS=300       # carga con Locust + resumen p50/p95
 | TC18 | Cumplimiento | Mensajes cifrados en BD, exportación con PII enmascarada y derecho al olvido | `tests/test_api.py` |
 | TC19 | Rendimiento | p95 de 50 turnos < 3 s | `tests/test_api.py` |
 | TC20 | Documentación | OpenAPI expone los endpoints principales y los KPIs se calculan | `tests/test_api.py` |
+| TC21 | Resiliencia | Dos workers comparten el circuito vía Redis (las fallas se suman) y una llamada de prueba lo cierra | `tests/test_api.py` |
 
-Resultado actual: **20/20 aprobadas** (también corren en GitHub Actions en cada push).
+Resultado actual: **21/21 aprobadas** (también corren en GitHub Actions en cada push).
+
+### Verificación del stack completo (docker-compose)
+
+Además de las pruebas automatizadas, se levantó el stack completo (Nginx, 2 réplicas del backend,
+2 workers, RabbitMQ, PostgreSQL+pgvector, Redis, simulador Siebel y dashboard) y se verificó:
+
+- Nginx rechaza TLS 1.2 (solo TLS 1.3) y redirige HTTP → HTTPS.
+- pgvector contiene los 33 artículos; los mensajes quedan cifrados en PostgreSQL.
+- RabbitMQ con 8 consumidores en `siebel.commands` y su `siebel.commands.dlq`.
+- Handoff por `wss://` a través de Nginx entre réplicas distintas (Redis Pub/Sub).
+- Siebel caído (modo caos): 5 turnos fallan (~600 ms con reintentos), el circuito se abre para todos
+  los workers y los siguientes turnos responden en **~10 ms** en modo degradado; al recuperarse Siebel
+  el circuito pasa a semiabierto → cerrado, y las consultas encoladas se entregan al cliente como
+  notificación.
 
 ## 2. Métricas del modelo
 

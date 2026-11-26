@@ -3,6 +3,8 @@
     python -m app.workers.siebel_worker
 
 - Lecturas: se ejecutan con Circuit Breaker + reintentos; el resultado se deja en Redis.
+  Si el circuito está abierto, se re-encolan con backoff hasta que Siebel se recupere
+  (el cliente recibe la respuesta como notificación, tal como se le prometió).
 - Escrituras: si Siebel falla se re-encolan con backoff exponencial hasta
   SIEBEL_MAX_RETRIES; luego van a la Dead-Letter Queue (reprocesables).
 - Si el backend ya respondió "pendiente", el resultado se agrega como
@@ -27,6 +29,7 @@ from app.persistence.store import build_store
 
 log = logging.getLogger("siebel-worker")
 OPS = Counter("telecombot_siebel_operations_total", "Operaciones Siebel procesadas", ["operation", "status"])
+READ_RETRIES_WHILE_OPEN = 8   # ~55 s de espera total con backoff (1, 2, 4, 8, 10, 10, 10 s)
 CB_STATE = Gauge("telecombot_siebel_circuit_open", "1 si el Circuit Breaker está abierto")
 
 
@@ -55,7 +58,13 @@ class SiebelWorker:
             log.info("Siebel %s ok corr=%s", op, msg["correlation_id"])
         except Exception as exc:
             open_ = isinstance(exc, CircuitOpenError)
-            if msg.get("kind") == "write" and msg.get("attempt", 0) + 1 < self.max_retries:
+            attempt = msg.get("attempt", 0)
+            if open_ and msg.get("kind") == "read" and attempt + 1 < READ_RETRIES_WHILE_OPEN:
+                # se le prometió al cliente que recibirá la respuesta: se espera a que Siebel se recupere
+                self.sleep(min(2 ** attempt, 10))
+                self.queue.publish({**msg, "attempt": attempt + 1})
+                return
+            if msg.get("kind") == "write" and attempt + 1 < self.max_retries:
                 delay = min(2 ** msg.get("attempt", 0), 30)
                 log.warning("Siebel %s falló (%s); reintento en %ss", op, exc, delay)
                 self.sleep(delay)

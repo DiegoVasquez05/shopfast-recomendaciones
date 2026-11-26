@@ -193,3 +193,29 @@ def test_tc20_openapi_y_kpis(client, auth):
     chat(client, auth, "no tengo internet desde ayer")
     k = client.get("/api/v1/metrics/summary", headers=auth).json()["kpis"]
     assert k["sesiones"] >= 1 and "tasa_automatizacion" in k and "tasa_handoff" in k
+
+
+def test_tc21_circuit_breaker_compartido_entre_workers():
+    """Dos workers con el mismo Redis comparten el circuito: las fallas de ambos se suman."""
+    from app.integrations.circuit_breaker import CircuitBreaker, CircuitOpenError
+
+    now = [1000.0]
+    kv = MemoryKV()
+    w1, w2 = (CircuitBreaker(4, recovery_s=30, kv=kv, clock=lambda: now[0]) for _ in range(2))
+
+    def boom():
+        raise RuntimeError("503")
+
+    for i in range(4):  # 2 fallas en cada worker = 4 en total
+        try:
+            (w1 if i % 2 else w2).call(boom)
+        except RuntimeError:
+            pass
+    assert w1.state == w2.state == "open"
+    try:
+        w2.call(lambda: "ok")
+        raise AssertionError("debió rechazar la llamada")
+    except CircuitOpenError:
+        pass
+    now[0] += 31  # pasó el tiempo de recuperación: una sola llamada de prueba cierra el circuito
+    assert w1.call(lambda: "ok") == "ok" and w2.state == "closed"

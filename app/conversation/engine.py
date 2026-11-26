@@ -129,8 +129,8 @@ class ConversationEngine:
                 elif res.status == "circuit_open":
                     reply.reply = R.CRM_DEGRADED
                 else:
-                    reply.reply = ("No pude obtener tu información (" + (res.error or "error") +
-                                   "). ¿Quieres que te derive con un ejecutivo?")
+                    log.warning("Siebel %s falló: %s", intent.crm_operation, res.error)
+                    reply.reply = R.CRM_FAILED
         else:  # rag
             t = time.perf_counter()
             ans = self.rag.answer(msg.text, nlu.intent)
