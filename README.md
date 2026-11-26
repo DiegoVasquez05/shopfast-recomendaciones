@@ -1,7 +1,7 @@
 # TelecomBot AI — Chatbot inteligente para TelcoAustral
 
 Proyecto semestral de **ITY1102 Arquitectura de Sistemas de Inteligencia Artificial** (Caso 2).
-Implementación y despliegue (EP3) de la arquitectura definida en la EP2 (arc42).
+Implementación y despliegue (EP3).
 
 **Equipo Hijos del wifi:** Diego Vásquez · Marcos San Martín
 
