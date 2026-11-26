@@ -58,16 +58,16 @@ Además de las pruebas automatizadas, se levantó el stack completo (Nginx, 2 r�
 - Hit@1, Recall@3 y MRR del RAG, con y sin la intención detectada;
 - latencia de inferencia local.
 
-> Completar esta tabla con los valores de `models/metrics.json` del entrenamiento con el dataset real.
+Resultados con el dataset real (24.635 ejemplos de Bitext + 3.450 de adaptación al español chileno):
 
 | Conjunto | n | Accuracy | Precision (macro) | Recall (macro) | F1 (macro) |
 |---|---|---|---|---|---|
-| Bitext test | | | | | |
-| es-CL manual | 67 | | | | |
+| Bitext test | 3.696 | 0,9970 | 0,9971 | 0,9970 | 0,9970 |
+| es-CL manual | 67 | 0,9254 | 0,9560 | 0,9239 | 0,9249 |
+| SageMaker Training Job (test) | 3.763 | 0,9960 | 0,9830 | 0,9690 | 0,9688 |
 
-Referencia con la muestra sintética: el set manual en español chileno obtuvo accuracy 0,955 y
-F1 macro 0,965. El RAG llegó a Recall@3 de 0,82 solo con búsqueda híbrida y de 1,00 sumando la
-intención detectada (MRR 0,93). La inferencia local tarda 1,2 ms (p50) y 1,6 ms (p95).
+RAG: Recall@3 = 1,00 y MRR = 0,93 usando la intención detectada. Endpoint SageMaker (ml.m5.large):
+200 invocaciones con accuracy 0,995, p50 15,5 ms, p95 54,9 ms y p99 97,5 ms.
 
 ## 3. Pruebas de carga (Locust)
 
@@ -86,8 +86,16 @@ y ejecutivo 5%.
 Las consultas que pasan por Siebel (saldo, boleta) dominan la latencia (~100 ms, por la latencia del
 CRM); las de RAG y small talk responden en 15-20 ms (p50).
 
-> Repetir contra la EC2 (`make load HOST=https://<IP> USERS=300`) y pegar la tabla que imprime
-> `loadtest/summarize.py`, junto con capturas de CloudWatch durante la prueba.
+**Ejecución en AWS** (desde AWS CloudShell contra la EC2 t3.large, 5 minutos):
+
+| Usuarios | Requests | p50 | p95 | p99 | Throughput | Errores |
+|---|---|---|---|---|---|---|
+| 300 | 14.501 | 430 ms | 1.900 ms | 2.500 ms | 48,4 req/s | 0,01% |
+
+La CPU de la EC2 llegó a 61,5% y la latencia del modelo en SageMaker se mantuvo entre 6 y 14 ms.
+El dashboard registró 2.374 sesiones con 59,5% de automatización (meta del caso: 60%).
+El SLA de 3 s se cumple; el p99 de 2,5 s indica que para 1.000 conversaciones hay que escalar
+horizontalmente.
 
 ## 4. Oportunidades de optimización
 

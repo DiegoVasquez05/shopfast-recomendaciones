@@ -12,9 +12,9 @@ asíncrona y **deriva a un ejecutivo** los casos complejos.
 
 | Objetivo del caso | Cómo se aborda |
 |---|---|
-| Automatizar 60% de consultas repetitivas | NLU de 35 intenciones + RAG + consultas a Siebel; KPI `tasa_automatizacion` en el dashboard |
-| Espera de 8 a 2 min | Respuesta automática en < 300 ms (p95 medido); handoff con resumen para el agente |
-| Latencia ≤ 3 s por interacción | p95 = 210 ms con 500 usuarios concurrentes (prueba local, ver `docs/pruebas.md`) |
+| Automatizar 60% de consultas repetitivas | NLU de 35 intenciones (F1 0,997) + RAG + Siebel; 59,5% de automatización en la simulación |
+| Espera de 8 a 2 min | Respuesta automática en segundos; handoff con resumen para el agente |
+| Latencia ≤ 3 s por interacción | p95 = 1,9 s con 300 usuarios concurrentes en AWS (ver `docs/pruebas.md`) |
 | Español chileno | Normalizador de modismos + corpus de adaptación + set de evaluación manual |
 | Siebel legacy | Cola de comandos (RabbitMQ/SQS) + worker + Circuit Breaker + DLQ |
 | Piloto 10% | Asignación determinista por usuario; el 90% restante va al canal tradicional |

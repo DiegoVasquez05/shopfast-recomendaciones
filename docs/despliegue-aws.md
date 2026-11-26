@@ -34,8 +34,10 @@ El script:
 2. Sube el código de entrenamiento/inferencia y los CSV.
 3. Lanza un **Training Job** (`ml.m5.large`, contenedor oficial scikit-learn 1.2-1). Las métricas
    `test_accuracy`, `test_precision`, `test_recall` y `test_f1` quedan en CloudWatch.
-4. Crea el **endpoint** `telecombot-nlu` (`ml.t2.medium`) y configura **auto-scaling** de 1 a 2
-   instancias según invocaciones por instancia.
+4. Crea el **endpoint** `telecombot-nlu` y configura **auto-scaling** de 1 a 2 instancias según
+   invocaciones por instancia. AWS Academy prohíbe `ml.t2.medium`, así que el script prueba otros tipos
+   (en nuestra cuenta quedó en `ml.m5.large`) y, si ninguno está permitido, usa Serverless Inference.
+   Si el entrenamiento ya terminó, `make endpoint-sm BUCKET=...` recrea solo el endpoint.
 
 Verificación:
 
@@ -102,13 +104,13 @@ endpoint) y del dashboard de Grafana.
 | Recurso | Tipo | USD/hora | USD/mes 24×7 |
 |---|---|---|---|
 | EC2 | t3.large | 0,0832 | ~60,7 |
-| Endpoint SageMaker | ml.t2.medium | 0,056 | ~40,9 |
+| Endpoint SageMaker | ml.m5.large (AWS Academy no permite ml.t2.medium) | 0,115 | ~84 |
 | Training Job semanal | ml.m5.large, ~5 min | 0,115 | ~0,04 |
 | S3 + CloudWatch | < 1 GB, logs básicos | — | ~3 |
-| **Total** | | | **~105 USD/mes** |
+| **Total** | | | **~148 USD/mes** |
 
 **Producción (estimación de la EP2 con AWS Pricing Calculator):** USD 2.940,62/mes, dentro del
-presupuesto del caso (USD 2.500–3.500). El piloto valida la arquitectura con ~4% de ese costo; los
+presupuesto del caso (USD 2.500–3.500). El piloto valida la arquitectura con ~5% de ese costo; los
 mayores ítems en producción son ELB y RDS Multi-AZ.
 
 Optimización: usar `ml.t2.medium` (el modelo pesa < 10 MB y responde en ~2 ms), escalar el endpoint a
