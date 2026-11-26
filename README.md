@@ -3,6 +3,8 @@
 Proyecto semestral de **ITY1102 Arquitectura de Sistemas de Inteligencia Artificial** (Caso 2).
 Implementación y despliegue (EP3) de la arquitectura definida en la EP2 (arc42).
 
+**Equipo Hijos del wifi:** Diego Vásquez · Marcos San Martín
+
 TelcoAustral tiene 500.000 clientes y el 80% de las llamadas al call center son consultas repetitivas
 (saldo, boletas, planes), con 8 minutos de espera promedio. TelecomBot AI atiende esas consultas por
 **Web Widget, WhatsApp y App móvil**, entiende **español chileno**, consulta el **CRM Siebel** de forma
