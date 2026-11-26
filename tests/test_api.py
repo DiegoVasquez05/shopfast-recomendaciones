@@ -152,9 +152,15 @@ def test_tc16_webhook_whatsapp(client):
 
 def test_tc17_rate_limit_429(app_factory):
     c = TestClient(app_factory(rate_limit_per_minute=5))
-    auth = token(c)
-    codes = [c.post("/api/v1/nlu/predict", headers=auth, json={"text": "hola"}).status_code for _ in range(6)]
-    assert codes[-1] == 429 and 200 in codes
+    # por IP: /oauth/token sin token queda limitado a 5 req/min
+    codes = [c.post("/oauth/token", data={"grant_type": "client_credentials", "client_id": "dashboard",
+                                          "client_secret": "dev-dashboard-secret"}).status_code for _ in range(6)]
+    assert codes[:5] == [200] * 5 and codes[5] == 429
+    # por token: cada web widget tiene una cuota de 30 req/min
+    c2 = TestClient(app_factory())
+    w = {"Authorization": "Bearer " + c2.post("/api/v1/channels/web/token").json()["access_token"]}
+    codes = [c2.post("/api/v1/nlu/predict", headers=w, json={"text": "hola"}).status_code for _ in range(31)]
+    assert codes[:30] == [200] * 30 and codes[30] == 429
 
 
 def test_tc18_privacidad_cifrado_exportacion_y_olvido(client, auth):
