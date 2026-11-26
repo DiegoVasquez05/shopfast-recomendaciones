@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consola de agentes</title>
+<style>
+  :root { --brand:#0b5394; --muted:#6b7280; --line:#e5e7eb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:#f4f6f9; color:#111827; }
+  header { background:var(--brand); color:#fff; padding:12px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header input { padding:6px 8px; border-radius:6px; border:0; }
+  header button, .act button { background:#fff; color:var(--brand); border:0; border-radius:6px; padding:6px 12px; font-weight:600; cursor:pointer; }
+  #status { font-size:13px; opacity:.9; }
+  main { display:grid; grid-template-columns:minmax(220px, 320px) 1fr; gap:12px; padding:12px; }
+  @media (max-width: 720px) { main { grid-template-columns:1fr; } }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px; }
+  .case { padding:8px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .case:hover, .case.sel { background:#eef5fb; }
+  .case small { color:var(--muted); display:block; }
+  pre { white-space:pre-wrap; background:#f9fafb; border:1px solid var(--line); border-radius:8px; padding:8px; font-size:13px; }
+  #log div { padding:4px 0; border-bottom:1px dashed var(--line); font-size:14px; }
+  .act { display:flex; gap:8px; margin-top:8px; }
+  .act input { flex:1; padding:8px; border:1px solid var(--line); border-radius:6px; }
+  .act button { background:var(--brand); color:#fff; }
+</style>
+</head>
+<body>
+<header>
+  <b>TelecomBot · Consola de agentes</b>
+  <input id="secret" type="password" placeholder="client secret de agent-console">
+  <button id="connect">Conectar</button>
+  <span id="status">desconectado</span>
+</header>
+<main>
+  <section class="card"><b>Casos derivados</b><div id="cases"></div></section>
+  <section class="card">
+    <div id="detail">Selecciona un caso para ver el resumen que dejó el bot.</div>
+    <div id="log"></div>
+    <div class="act"><input id="reply" placeholder="Respuesta al cliente..."><button id="send">Enviar</button><button id="close">Cerrar caso</button></div>
+  </section>
+</main>
+<script>
+let ws = null, current = null; const cases = {};
+const $ = (id) => document.getElementById(id);
+function renderCases() {
+  $("cases").innerHTML = "";
+  Object.values(cases).forEach((c) => {
+    const d = document.createElement("div"); d.className = "case" + (current === c.session_id ? " sel" : "");
+    d.innerHTML = `<b>${c.id}</b> · ${c.motivo}<small>${c.session_id} · ${c.estado || "pendiente"}</small>`;
+    d.onclick = () => { current = c.session_id; renderCases(); showDetail(c); };
+    $("cases").appendChild(d);
+  });
+}
+function showDetail(c) {
+  const r = typeof c.resumen === "string" ? c.resumen : JSON.stringify(c.resumen, null, 2);
+  $("detail").innerHTML = `<b>${c.id}</b> — motivo: ${c.motivo}<pre></pre>`;
+  $("detail").querySelector("pre").textContent = r;
+  $("log").innerHTML = "";
+}
+function log(t) { const d = document.createElement("div"); d.textContent = t; $("log").appendChild(d); }
+$("connect").onclick = async () => {
+  const body = new URLSearchParams({grant_type: "client_credentials", client_id: "agent-console", client_secret: $("secret").value});
+  const r = await fetch("/oauth/token", {method: "POST", body});
+  if (!r.ok) { $("status").textContent = "credenciales inválidas"; return; }
+  const token = (await r.json()).access_token;
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(`${proto}://${location.host}/ws/agents?token=${token}`);
+  ws.onopen = () => $("status").textContent = "conectado ✔";
+  ws.onclose = () => $("status").textContent = "desconectado";
+  ws.onmessage = (e) => {
+    const ev = JSON.parse(e.data);
+    if (ev.type === "pending") ev.handoffs.forEach((h) => cases[h.session_id] = h);
+    if (ev.type === "handoff_created") cases[ev.handoff.session_id] = ev.handoff;
+    if (ev.type === "customer_message" && ev.session_id === current) log("cliente: " + ev.text);
+    renderCases();
+  };
+};
+$("send").onclick = () => {
+  if (!ws || !current || !$("reply").value) return;
+  ws.send(JSON.stringify({type: "reply", session_id: current, text: $("reply").value}));
+  log("tú: " + $("reply").value); $("reply").value = "";
+};
+$("close").onclick = () => {
+  if (!ws || !current) return;
+  ws.send(JSON.stringify({type: "close", session_id: current}));
+  cases[current].estado = "cerrado"; renderCases(); log("— caso cerrado, la conversación vuelve al bot —");
+};
+</script>
+</body>
+</html>
