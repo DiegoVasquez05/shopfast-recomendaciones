@@ -186,7 +186,9 @@ async def ws_agents(ws: WebSocket, token: str | None = None):
     await ws.accept()
     state.ws.bind_loop()
     state.ws.add_agent(ws)
-    await ws.send_json({"type": "pending", "handoffs": state.store.handoffs("pendiente")})
+    # los registros de PostgreSQL traen fechas: se serializan como texto
+    await ws.send_text(json.dumps({"type": "pending", "handoffs": state.store.handoffs("pendiente")[:50]},
+                                  default=str))
     try:
         while True:
             data = await ws.receive_json()

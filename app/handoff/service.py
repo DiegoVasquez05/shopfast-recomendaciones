@@ -68,7 +68,7 @@ class ConnectionManager:
     async def _send_all(self, sockets, event: dict) -> None:
         for ws in list(sockets):
             try:
-                await ws.send_json(event)
+                await ws.send_text(json.dumps(event, default=str))
             except Exception:
                 sockets.discard(ws)
 
