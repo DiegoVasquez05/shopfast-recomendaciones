@@ -14,7 +14,7 @@ def format_crm(operation: str, data: dict | None) -> str:
     if operation == "get_balance":
         deuda = data.get("deuda", 0)
         txt = (f"{hi}tu deuda actual es de {clp(deuda)} con vencimiento el {data.get('vencimiento')}."
-               if deuda else f"{hi}estás al día, no tienes deuda pendiente. ")
+               if deuda else f"{hi}estás al día, no tienes deuda pendiente.")
         if data.get("datos_disponibles_gb") is not None:
             txt += f" Te quedan {data['datos_disponibles_gb']} GB de datos móviles de tu plan."
         return txt.strip()

@@ -2,7 +2,7 @@
 
 IMPORTANTE: este archivo debe seguir siendo compatible con Python 3.8 y no
 importar nada del proyecto, porque se empaqueta tal cual en el contenedor
-SageMaker scikit-learn (ver sagemaker/deploy.py).
+SageMaker scikit-learn (ver aws/sagemaker_deploy.py).
 
 Ejemplo:
     >>> normalize("wena po, kiero cachar cuanto debo de la boleta altiro")

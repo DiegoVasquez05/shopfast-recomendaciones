@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.api.controllers import router
-from app.api.ratelimit import RateLimiter
+from app.api.ratelimit import RateLimiter, client_key
 from app.channels.whatsapp import WhatsAppSender
 from app.config import Settings, get_settings
 from app.conversation.engine import ConversationEngine
@@ -100,7 +100,7 @@ def create_app(settings: Settings | None = None, *, kv=None, store=None, queue=N
         s.worker = SiebelWorker(SiebelClient(settings, breaker, http=http), s.queue, s.kv, s.store,
                                 settings.siebel_max_retries, sleep=lambda _: None)
         s.queue.consume(s.worker.handle)
-    s.ws = ConnectionManager()
+    s.ws = ConnectionManager(settings.redis_url)
     s.handoff = HandoffService(s.store, s.ws)
     s.whatsapp = WhatsAppSender(settings.whatsapp_token, settings.whatsapp_phone_number_id)
     s.engine = ConversationEngine(settings=settings, sessions=s.sessions, classifier=s.classifier,
@@ -117,10 +117,11 @@ def create_app(settings: Settings | None = None, *, kv=None, store=None, queue=N
         t0 = time.perf_counter()
         try:
             if settings.rate_limit_enabled and request.url.path.startswith(("/api/", "/webhooks/", "/oauth/")):
-                client = (request.headers.get("authorization") or
-                          request.headers.get("x-forwarded-for", "").split(",")[0].strip() or
-                          (request.client.host if request.client else "anon"))
-                ok, retry = s.limiter.check(client)
+                ip = (request.headers.get("x-forwarded-for", "").split(",")[0].strip() or
+                      (request.client.host if request.client else "anon"))
+                key, quota = client_key(request.headers.get("authorization"), ip, settings.rate_limit_per_minute)
+                ok, retry = s.limiter.check(key, min(quota, settings.rate_limit_per_minute)
+                                            if key.startswith("ip:") else quota)
                 if not ok:
                     return JSONResponse({"detail": "Rate limit excedido"}, status_code=429,
                                         headers={"Retry-After": str(retry), "X-Correlation-ID": corr})

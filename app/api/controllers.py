@@ -132,7 +132,7 @@ def model_info(request: Request, _=Depends(require_scope("metrics:read"))):
 def summary(request: Request, _=Depends(require_scope("metrics:read"))):
     s = st(request)
     return {"kpis": s.store.stats(), "siebel_circuit": read_state(s.kv), "cola_siebel_pendientes": s.queue.depth(),
-            "agentes_conectados": len(s.ws.agents), "piloto_porcentaje": s.settings.pilot_percentage,
+            "agentes_conectados_en_esta_replica": len(s.ws.agents), "piloto_porcentaje": s.settings.pilot_percentage,
             "objetivos": {"automatizacion": 0.60, "latencia_p95_ms": 3000, "espera_min": 2}}
 
 

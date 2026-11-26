@@ -9,7 +9,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import threading
 import time
 import uuid
 
@@ -23,14 +25,45 @@ WAIT_ESTIMATE_MIN_PER_CASE = 2
 
 
 class ConnectionManager:
-    def __init__(self) -> None:
+    """Conexiones WebSocket del proceso actual.
+
+    Con varias réplicas (y varios workers de uvicorn) cada proceso tiene sus propios
+    sockets: si hay Redis, los eventos se publican en un canal Pub/Sub y cada proceso
+    los entrega a los sockets que tiene conectados (fan-out entre réplicas).
+    """
+    CHANNEL = "telecombot:ws-events"
+    CUSTOMERS_SET = "telecombot:ws-customers"
+
+    def __init__(self, redis_url: str = "") -> None:
         self.agents: set[WebSocket] = set()
         self.customers: dict[str, set[WebSocket]] = {}
         self.loop: asyncio.AbstractEventLoop | None = None
+        self.redis = None
+        if redis_url:
+            import redis
+
+            self.redis = redis.Redis.from_url(redis_url, decode_responses=True)
 
     def bind_loop(self) -> None:
         if self.loop is None:
             self.loop = asyncio.get_running_loop()
+            if self.redis is not None:
+                threading.Thread(target=self._subscribe, daemon=True, name="ws-pubsub").start()
+
+    def _subscribe(self) -> None:
+        while True:
+            try:
+                ps = self.redis.pubsub(ignore_subscribe_messages=True)
+                ps.subscribe(self.CHANNEL)
+                for msg in ps.listen():
+                    data = json.loads(msg["data"])
+                    if data["target"] == "agents":
+                        self._emit(self._send_all(self.agents, data["event"]))
+                    elif data["session_id"] in self.customers:
+                        self._emit(self._send_all(self.customers[data["session_id"]], data["event"]))
+            except Exception as exc:
+                log.warning("Pub/Sub de WebSockets interrumpido (%s); reconectando", exc)
+                time.sleep(2)
 
     async def _send_all(self, sockets, event: dict) -> None:
         for ws in list(sockets):
@@ -40,9 +73,18 @@ class ConnectionManager:
                 sockets.discard(ws)
 
     def emit_agents(self, event: dict) -> None:
-        self._emit(self._send_all(self.agents, event))
+        if self.redis is not None:
+            self.redis.publish(self.CHANNEL, json.dumps({"target": "agents", "event": event}, default=str))
+        else:
+            self._emit(self._send_all(self.agents, event))
 
     def emit_customer(self, session_id: str, event: dict) -> bool:
+        if self.redis is not None:
+            if not self.redis.sismember(self.CUSTOMERS_SET, session_id):
+                return False
+            self.redis.publish(self.CHANNEL, json.dumps({"target": "customer", "session_id": session_id,
+                                                         "event": event}, default=str))
+            return True
         socks = self.customers.get(session_id)
         if not socks:
             return False
@@ -50,7 +92,7 @@ class ConnectionManager:
         return True
 
     def _emit(self, coro) -> None:
-        """Permite emitir desde código síncrono (threadpool de FastAPI) hacia el event loop."""
+        """Permite emitir desde código síncrono (threadpool de FastAPI o hilo Pub/Sub) hacia el event loop."""
         if self.loop is None:
             coro.close()
             return
@@ -73,10 +115,14 @@ class ConnectionManager:
 
     def add_customer(self, session_id: str, ws: WebSocket) -> None:
         self.customers.setdefault(session_id, set()).add(ws)
+        if self.redis is not None:
+            self.redis.sadd(self.CUSTOMERS_SET, session_id)
         ACTIVE_WS.labels("customer").set(sum(len(v) for v in self.customers.values()))
 
     def remove_customer(self, session_id: str, ws: WebSocket) -> None:
         self.customers.get(session_id, set()).discard(ws)
+        if self.redis is not None and not self.customers.get(session_id):
+            self.redis.srem(self.CUSTOMERS_SET, session_id)
         ACTIVE_WS.labels("customer").set(sum(len(v) for v in self.customers.values()))
 
 
