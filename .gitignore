@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.pytest_cache/
+data/*.csv
+!data/eval_es_cl.csv
+data/*.zip
+models/
+nginx/certs/
+loadtest/results/
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,3 @@
+# Opcional: generación con Amazon Bedrock vía LangChain (LLM_PROVIDER=bedrock)
+langchain-core>=0.2
+langchain-aws>=0.1.10
