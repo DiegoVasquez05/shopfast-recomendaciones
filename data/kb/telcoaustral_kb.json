@@ -1,0 +1,352 @@
+[
+ {
+  "id": "KB-001",
+  "titulo": "Cómo consultar el saldo y la deuda",
+  "intents": [
+   "check_balance"
+  ],
+  "contenido": "Puedes revisar tu saldo, deuda y bolsa de datos en la App TelcoAustral (sección 'Mi cuenta'), en la sucursal virtual o enviando SALDO al 200. Si eres cliente prepago, marca *100# para ver tu saldo disponible.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-002",
+  "titulo": "Bolsas de datos adicionales",
+  "intents": [
+   "check_balance",
+   "change_plan"
+  ],
+  "contenido": "Si te quedaste sin datos puedes comprar una bolsa adicional: 5 GB por $3.990 o 20 GB por $7.990, válidas por 30 días. Se compran desde la App o enviando BOLSA al 200.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-003",
+  "titulo": "Entender tu boleta",
+  "intents": [
+   "check_invoice"
+  ],
+  "contenido": "La boleta incluye: cargo fijo del plan, cargos variables (bolsas, roaming, servicios adicionales), descuentos y saldo anterior. El periodo de facturación va del día 1 al último día del mes y la boleta vence el día 20 del mes siguiente.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-004",
+  "titulo": "Cobros no reconocidos en la boleta",
+  "intents": [
+   "check_invoice",
+   "payment_issue",
+   "get_refund"
+  ],
+  "contenido": "Si ves un cobro que no reconoces, puedes objetarlo dentro de 60 días desde la emisión de la boleta. Revisa primero los servicios adicionales y compras con cargo a la cuenta; si el cobro es incorrecto se abre un caso y la devolución se aplica como abono en la boleta siguiente.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-005",
+  "titulo": "Descargar copia de la boleta",
+  "intents": [
+   "get_invoice"
+  ],
+  "contenido": "Las boletas electrónicas de los últimos 12 meses están disponibles en la App y en la sucursal virtual (Mis boletas > Descargar PDF). También puedes solicitar que te la reenviemos al correo registrado.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-006",
+  "titulo": "Medios de pago",
+  "intents": [
+   "check_payment_methods"
+  ],
+  "contenido": "Puedes pagar con tarjeta de débito o crédito (Webpay) en la App y la web, por transferencia, en Servipag, Caja Vecina y supermercados adheridos, o suscribir Pago Automático (PAT con tarjeta de crédito o PAC con cuenta corriente) desde la sucursal virtual.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-007",
+  "titulo": "Pago no reflejado",
+  "intents": [
+   "payment_issue"
+  ],
+  "contenido": "Los pagos con tarjeta se reflejan de inmediato; los realizados en caja o por transferencia pueden tardar hasta 48 horas hábiles. Si pagaste y el servicio fue suspendido, la reposición es automática dentro de 4 horas desde que el pago se acredita.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-008",
+  "titulo": "Pago duplicado",
+  "intents": [
+   "payment_issue",
+   "get_refund"
+  ],
+  "contenido": "Si pagaste dos veces la misma boleta, el monto duplicado queda como saldo a favor y se descuenta automáticamente en tu próxima boleta. Si prefieres la devolución en dinero, se gestiona en un plazo de 10 días hábiles.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-009",
+  "titulo": "Planes móviles disponibles",
+  "intents": [
+   "change_plan",
+   "place_order"
+  ],
+  "contenido": "Planes móviles 2026: Plan Libre 30 GB ($9.990), Plan Libre 80 GB ($14.990) y Plan Ilimitado ($19.990). Todos incluyen minutos ilimitados a todo destino nacional y redes sociales libres. El cambio de plan se aplica desde el siguiente ciclo de facturación.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-010",
+  "titulo": "Planes hogar (fibra y TV)",
+  "intents": [
+   "change_plan",
+   "place_order"
+  ],
+  "contenido": "Planes hogar: Fibra 600 Mbps ($19.990), Fibra 940 Mbps ($24.990) y Dúo Fibra 940 + TV 120 canales ($32.990). La instalación es gratuita y se agenda en un plazo de 3 a 5 días hábiles.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-011",
+  "titulo": "Cómo cambiar de plan",
+  "intents": [
+   "change_plan"
+  ],
+  "contenido": "Puedes subir o bajar de plan desde la App (Mi plan > Cambiar plan) sin costo. Subir de plan se aplica de inmediato; bajar de plan se aplica desde el siguiente ciclo. Si tienes un equipo en cuotas, bajar de plan puede generar un cobro por término de beneficio.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-012",
+  "titulo": "Sin señal en el celular",
+  "intents": [
+   "technical_support"
+  ],
+  "contenido": "Si tu celular no tiene señal: 1) reinicia el equipo, 2) activa y desactiva el modo avión, 3) revisa que la SIM esté bien insertada, 4) verifica en la App si hay una falla masiva en tu comuna. Si persiste, generamos un caso técnico.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-013",
+  "titulo": "Internet hogar lento o sin conexión",
+  "intents": [
+   "technical_support"
+  ],
+  "contenido": "Para fallas de internet hogar: 1) reinicia el router desenchufándolo 30 segundos, 2) revisa que la luz PON/Fibra esté verde (luz roja indica corte de fibra), 3) prueba con cable en vez de wifi. Si la luz sigue roja o la velocidad es menor al 50% de lo contratado, agendamos visita técnica sin costo.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-014",
+  "titulo": "Televisión sin señal",
+  "intents": [
+   "technical_support"
+  ],
+  "contenido": "Si la TV no tiene señal: verifica que el decodificador esté encendido y conectado por HDMI, reinícialo desenchufándolo 1 minuto y selecciona la fuente HDMI correcta en el televisor. Si aparece el mensaje 'sin autorización', puede deberse a una suspensión por deuda.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-015",
+  "titulo": "Portabilidad numérica",
+  "intents": [
+   "portability"
+  ],
+  "contenido": "Para portarte a TelcoAustral conservando tu número solo necesitas tu cédula de identidad y que la línea esté a tu nombre. El proceso es gratuito y tarda como máximo 3 días hábiles; tu línea anterior funciona hasta el momento del cambio.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-016",
+  "titulo": "Roaming internacional",
+  "intents": [
+   "roaming"
+  ],
+  "contenido": "Activa el roaming en la App (Mi línea > Roaming) antes de viajar. Bolsas Roaming América 5 GB por $9.990 (7 días) y Roaming Mundo 3 GB por $14.990 (7 días). Sin bolsa, el MB cuesta $50. En países de la Unión Europea tus datos se tratan conforme al GDPR.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-017",
+  "titulo": "Canales y horarios de atención",
+  "intents": [
+   "contact_customer_service"
+  ],
+  "contenido": "Atención 24/7 en la App, WhatsApp y este chat. Call center 600 000 0000 de lunes a domingo de 8:00 a 22:00. Sucursales de lunes a viernes de 9:00 a 19:00 y sábados de 10:00 a 14:00.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-018",
+  "titulo": "Dar de baja un servicio",
+  "intents": [
+   "delete_account",
+   "check_cancellation_fee"
+  ],
+  "contenido": "La baja de servicios puede solicitarse en la App, sucursal o con un ejecutivo, y se hace efectiva dentro de 1 día hábil. No existe multa por término anticipado de contrato; solo se cobran cuotas pendientes de equipos comprados a plazo.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-019",
+  "titulo": "Cargo por término de contrato",
+  "intents": [
+   "check_cancellation_fee"
+  ],
+  "contenido": "En Chile no se cobran multas por terminar un contrato de telecomunicaciones. Si compraste un equipo en cuotas, el saldo pendiente se mantiene o puede pagarse de una vez.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-020",
+  "titulo": "Recuperar clave de la App",
+  "intents": [
+   "recover_password",
+   "registration_problems"
+  ],
+  "contenido": "Para recuperar tu clave ingresa a la App y presiona '¿Olvidaste tu clave?'. Te enviaremos un código al correo o celular registrado. Por seguridad nunca te pediremos tu clave por chat ni por teléfono.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-021",
+  "titulo": "Crear cuenta en la sucursal virtual",
+  "intents": [
+   "create_account",
+   "registration_problems"
+  ],
+  "contenido": "Para registrarte en la sucursal virtual necesitas tu RUT y un correo electrónico. Si el sistema indica que el RUT ya está registrado, usa la opción de recuperar clave.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-022",
+  "titulo": "Actualizar datos personales",
+  "intents": [
+   "edit_account",
+   "switch_account"
+  ],
+  "contenido": "Puedes actualizar correo, teléfono de contacto y dirección de facturación en la App (Perfil > Mis datos). El cambio de titular requiere la presencia de ambas personas con su cédula en una sucursal.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-023",
+  "titulo": "Cambio de dirección del servicio hogar",
+  "intents": [
+   "change_shipping_address",
+   "set_up_shipping_address",
+   "edit_account"
+  ],
+  "contenido": "Si te cambias de casa, el traslado del servicio hogar es gratuito si hay factibilidad técnica en la nueva dirección. Se agenda en 3 a 5 días hábiles.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-024",
+  "titulo": "Despacho de equipos y SIM",
+  "intents": [
+   "delivery_options",
+   "delivery_period",
+   "track_order"
+  ],
+  "contenido": "Los equipos y SIM comprados online se despachan gratis a todo Chile: 24 a 48 horas en Santiago y 3 a 5 días hábiles en regiones. También puedes retirar en sucursal. El seguimiento está en la App (Mis pedidos).",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-025",
+  "titulo": "Estado de instalación",
+  "intents": [
+   "track_order"
+  ],
+  "contenido": "Puedes revisar el estado de tu instalación en la App (Mis pedidos). El día de la visita recibirás un SMS con la ventana horaria de 4 horas y el nombre del técnico.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-026",
+  "titulo": "Anular o modificar una compra",
+  "intents": [
+   "cancel_order",
+   "change_order"
+  ],
+  "contenido": "Las compras online pueden anularse dentro de 10 días desde la recepción (derecho a retracto) si el equipo está sin uso y con su caja. Para modificar un pedido antes del despacho contáctanos por este chat.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-027",
+  "titulo": "Política de devoluciones",
+  "intents": [
+   "check_refund_policy",
+   "get_refund",
+   "track_refund"
+  ],
+  "contenido": "Las devoluciones de dinero por cobros incorrectos, pagos duplicados o compensaciones por días sin servicio se abonan en la boleta siguiente o se transfieren en 10 días hábiles. El estado de la solicitud se revisa en la App (Mis casos).",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-028",
+  "titulo": "Compensación por cortes de servicio",
+  "intents": [
+   "get_refund",
+   "complaint",
+   "technical_support"
+  ],
+  "contenido": "Si tu servicio estuvo interrumpido más de 6 horas continuas por causas atribuibles a TelcoAustral, tienes derecho a una compensación proporcional que se descuenta automáticamente en la siguiente boleta.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-029",
+  "titulo": "Reclamos y SERNAC/SUBTEL",
+  "intents": [
+   "complaint"
+  ],
+  "contenido": "Puedes ingresar un reclamo formal por este chat, en la App o en sucursal. Respondemos en un máximo de 5 días hábiles. Si no quedas conforme, puedes recurrir a SUBTEL o SERNAC con tu número de reclamo.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-030",
+  "titulo": "Ofertas y newsletter",
+  "intents": [
+   "newsletter_subscription"
+  ],
+  "contenido": "Puedes suscribirte o darte de baja de las comunicaciones comerciales en la App (Perfil > Preferencias). Respetamos tu decisión conforme a la Ley 19.628.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-031",
+  "titulo": "Opinión sobre la atención",
+  "intents": [
+   "review"
+  ],
+  "contenido": "Al finalizar cada atención te enviaremos una encuesta breve de satisfacción. También puedes dejar tus comentarios en la App (Ayuda > Opinar).",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-032",
+  "titulo": "Comprar equipos",
+  "intents": [
+   "place_order"
+  ],
+  "contenido": "Puedes comprar equipos en la tienda online con hasta 24 cuotas con cargo a tu boleta, sujeto a evaluación comercial. Los equipos incluyen garantía de 12 meses.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ },
+ {
+  "id": "KB-033",
+  "titulo": "Privacidad y protección de datos",
+  "intents": [
+   "edit_account",
+   "contact_customer_service"
+  ],
+  "contenido": "TelcoAustral trata tus datos conforme a la Ley N°19.628 y, para clientes en roaming en la UE, al GDPR. Puedes solicitar acceso o eliminación de tus datos de conversación en la App (Privacidad) o por este chat.",
+  "fuente": "Manual de atención TelcoAustral (ficticio, uso académico)",
+  "actualizado": "2026-11-01"
+ }
+]
