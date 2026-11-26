@@ -43,6 +43,9 @@ load:             ## Prueba de carga: make load HOST=https://IP USERS=300
 deploy-sm:        ## Training Job + endpoint SageMaker: make deploy-sm BUCKET=telecombot-xxx
 	$(PY) -m aws.sagemaker_deploy deploy --bucket $(BUCKET)
 
+endpoint-sm:      ## Solo (re)crea el endpoint usando el último Training Job completado
+	$(PY) -m aws.sagemaker_deploy deploy --bucket $(BUCKET) --reuse-training
+
 test-sm:
 	$(PY) -m aws.sagemaker_deploy test
 

@@ -56,15 +56,19 @@ def wait(describe, key, ok, bad, every=30):
         time.sleep(every)
 
 
-def deploy(a) -> None:
-    sess = boto3.Session(region_name=a.region)
-    sm, s3 = sess.client("sagemaker"), sess.client("s3")
-    acct = sess.client("sts").get_caller_identity()["Account"]
-    role = a.role or f"arn:aws:iam::{acct}:role/LabRole"
-    stamp = time.strftime("%Y%m%d-%H%M%S")
-    prefix = f"{a.prefix}/{stamp}"
-    image = a.image_uri or image_uri(a.region)
+ENDPOINT_FALLBACKS = ["ml.t2.medium", "ml.m5.large", "ml.c5.large", "ml.t2.large", "ml.m4.xlarge"]
 
+
+def last_training_job(sm) -> str:
+    jobs = sm.list_training_jobs(NameContains="telecombot-nlu", StatusEquals="Completed", SortBy="CreationTime",
+                                 SortOrder="Descending", MaxResults=1)["TrainingJobSummaries"]
+    if not jobs:
+        raise SystemExit("No hay Training Jobs completados: ejecuta deploy sin --reuse-training")
+    return jobs[0]["TrainingJobName"]
+
+
+def train_job(a, sm, s3, role, image, stamp) -> str:
+    prefix = f"{a.prefix}/{stamp}"
     print(f"[1/5] Bucket s3://{a.bucket} (cifrado SSE-KMS)")
     try:
         s3.head_bucket(Bucket=a.bucket)
@@ -102,42 +106,90 @@ def deploy(a) -> None:
         Tags=[{"Key": "proyecto", "Value": "telecombot"}])
     wait(lambda: sm.describe_training_job(TrainingJobName=job), "TrainingJobStatus", {"Completed"},
          {"Failed", "Stopped"})
+    return job
+
+
+def deploy(a) -> None:
+    from botocore.exceptions import ClientError
+
+    sess = boto3.Session(region_name=a.region)
+    sm, s3 = sess.client("sagemaker"), sess.client("s3")
+    acct = sess.client("sts").get_caller_identity()["Account"]
+    role = a.role or f"arn:aws:iam::{acct}:role/LabRole"
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    image = a.image_uri or image_uri(a.region)
+
+    if a.reuse_training:
+        job = last_training_job(sm)
+        print(f"[1-3/5] Reutilizando el Training Job {job}")
+    else:
+        job = train_job(a, sm, s3, role, image, stamp)
     desc = sm.describe_training_job(TrainingJobName=job)
     print("   métricas:", {m["MetricName"]: round(m["Value"], 4) for m in desc.get("FinalMetricDataList", [])})
     model_data = desc["ModelArtifacts"]["S3ModelArtifacts"]
+    src_uri = json.loads(desc["HyperParameters"]["sagemaker_submit_directory"])
 
-    print(f"[4/5] Endpoint {a.endpoint} ({a.endpoint_instance})")
-    model_name, cfg = f"telecombot-nlu-{stamp}", f"telecombot-nlu-cfg-{stamp}"
+    print(f"[4/5] Endpoint {a.endpoint}")
+    model_name = f"telecombot-nlu-{stamp}"
     sm.create_model(ModelName=model_name, ExecutionRoleArn=role, PrimaryContainer={
         "Image": image, "ModelDataUrl": model_data,
         "Environment": {"SAGEMAKER_PROGRAM": "inference.py", "SAGEMAKER_SUBMIT_DIRECTORY": src_uri,
                         "SAGEMAKER_REGION": a.region, "SAGEMAKER_CONTAINER_LOG_LEVEL": "20"}})
-    sm.create_endpoint_config(EndpointConfigName=cfg, ProductionVariants=[{
-        "VariantName": "AllTraffic", "ModelName": model_name, "InitialInstanceCount": 1,
-        "InstanceType": a.endpoint_instance, "InitialVariantWeight": 1.0}])
-    try:
-        sm.describe_endpoint(EndpointName=a.endpoint)
-        sm.update_endpoint(EndpointName=a.endpoint, EndpointConfigName=cfg)  # blue/green gestionado por SageMaker
-    except sm.exceptions.ClientError:
-        sm.create_endpoint(EndpointName=a.endpoint, EndpointConfigName=cfg)
+    # AWS Academy restringe algunos tipos de instancia: se prueban en orden y, si ninguno está
+    # permitido, se usa SageMaker Serverless Inference (escala automáticamente, se paga por uso).
+    candidates = [a.endpoint_instance] + [t for t in ENDPOINT_FALLBACKS if t != a.endpoint_instance] + ["serverless"]
+    chosen = None
+    for i, itype in enumerate(candidates):
+        cfg = f"telecombot-nlu-cfg-{stamp}-{i}"
+        variant = {"VariantName": "AllTraffic", "ModelName": model_name}
+        if itype == "serverless":
+            variant["ServerlessConfig"] = {"MemorySizeInMB": 2048, "MaxConcurrency": 10}
+        else:
+            variant.update({"InitialInstanceCount": 1, "InstanceType": itype, "InitialVariantWeight": 1.0})
+        try:
+            sm.create_endpoint_config(EndpointConfigName=cfg, ProductionVariants=[variant])
+            try:
+                sm.describe_endpoint(EndpointName=a.endpoint)
+                sm.update_endpoint(EndpointName=a.endpoint, EndpointConfigName=cfg)  # blue/green gestionado
+            except ClientError as exc:
+                if exc.response["Error"]["Code"] != "ValidationException":
+                    raise
+                sm.create_endpoint(EndpointName=a.endpoint, EndpointConfigName=cfg)
+            chosen = itype
+            print(f"   tipo de endpoint: {itype}")
+            break
+        except ClientError as exc:
+            code = exc.response["Error"]["Code"]
+            if code not in ("AccessDeniedException", "ValidationException", "ResourceLimitExceeded"):
+                raise
+            print(f"   {itype} no permitido en esta cuenta ({code}); probando el siguiente")
+            try:
+                sm.delete_endpoint_config(EndpointConfigName=cfg)
+            except ClientError:
+                pass
+    if chosen is None:
+        raise SystemExit("Ningún tipo de endpoint está permitido en esta cuenta")
     wait(lambda: sm.describe_endpoint(EndpointName=a.endpoint), "EndpointStatus", {"InService"}, {"Failed"})
 
     print("[5/5] Auto-scaling")
-    try:
-        aas = sess.client("application-autoscaling")
-        rid = f"endpoint/{a.endpoint}/variant/AllTraffic"
-        aas.register_scalable_target(ServiceNamespace="sagemaker", ResourceId=rid,
-                                     ScalableDimension="sagemaker:variant:DesiredInstanceCount",
-                                     MinCapacity=1, MaxCapacity=a.max_instances)
-        aas.put_scaling_policy(
-            PolicyName="telecombot-invocaciones", ServiceNamespace="sagemaker", ResourceId=rid,
-            ScalableDimension="sagemaker:variant:DesiredInstanceCount", PolicyType="TargetTrackingScaling",
-            TargetTrackingScalingPolicyConfiguration={
-                "TargetValue": float(a.target_invocations), "ScaleInCooldown": 300, "ScaleOutCooldown": 60,
-                "PredefinedMetricSpecification": {"PredefinedMetricType": "SageMakerVariantInvocationsPerInstance"}})
-        print(f"   1..{a.max_instances} instancias, objetivo {a.target_invocations} invocaciones/min por instancia")
-    except Exception as exc:
-        print(f"   [aviso] no se pudo configurar auto-scaling (¿restricción del Learner Lab?): {exc}")
+    if chosen == "serverless":
+        print("   Serverless: SageMaker escala automáticamente hasta 10 invocaciones concurrentes")
+    else:
+        try:
+            aas = sess.client("application-autoscaling")
+            rid = f"endpoint/{a.endpoint}/variant/AllTraffic"
+            aas.register_scalable_target(ServiceNamespace="sagemaker", ResourceId=rid,
+                                         ScalableDimension="sagemaker:variant:DesiredInstanceCount",
+                                         MinCapacity=1, MaxCapacity=a.max_instances)
+            aas.put_scaling_policy(
+                PolicyName="telecombot-invocaciones", ServiceNamespace="sagemaker", ResourceId=rid,
+                ScalableDimension="sagemaker:variant:DesiredInstanceCount", PolicyType="TargetTrackingScaling",
+                TargetTrackingScalingPolicyConfiguration={
+                    "TargetValue": float(a.target_invocations), "ScaleInCooldown": 300, "ScaleOutCooldown": 60,
+                    "PredefinedMetricSpecification": {"PredefinedMetricType": "SageMakerVariantInvocationsPerInstance"}})
+            print(f"   1..{a.max_instances} instancias, objetivo {a.target_invocations} invocaciones/min por instancia")
+        except Exception as exc:
+            print(f"   [aviso] no se pudo configurar auto-scaling (¿restricción del Learner Lab?): {exc}")
     print(f"\nListo. Agrega en .env:  SAGEMAKER_ENDPOINT={a.endpoint}")
 
 
@@ -182,6 +234,8 @@ def main() -> None:
     ap.add_argument("--max-instances", type=int, default=2)
     ap.add_argument("--target-invocations", type=int, default=200)
     ap.add_argument("-n", type=int, default=200)
+    ap.add_argument("--reuse-training", action="store_true",
+                    help="no entrena de nuevo: usa el último Training Job completado")
     a = ap.parse_args()
     if a.action == "deploy" and not a.bucket:
         ap.error("--bucket es obligatorio para deploy")
