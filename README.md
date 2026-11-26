@@ -72,7 +72,7 @@ dashboard/                    dashboard Streamlit
 k8s/                          manifiestos Kubernetes (EKS/Minikube): HPA, PDB, anti-afinidad
 loadtest/                     pruebas de carga con Locust
 monitoring/                   Prometheus (alertas) y Grafana (dashboard provisionado)
-tests/                        20 casos de prueba unitarios y de integración
+tests/                        21 casos de prueba unitarios y de integración
 ```
 
 ## Inicio rápido (local, sin Docker)
@@ -81,7 +81,7 @@ tests/                        20 casos de prueba unitarios y de integración
 python -m venv .venv && source .venv/bin/activate
 make install
 make train                 # sin data/bitext.csv usa una muestra sintética con el mismo esquema
-make test                  # 20 pruebas
+make test                  # 21 pruebas
 make run                   # http://localhost:8000/widget  ·  /docs  ·  /agent
 make dashboard             # en otra terminal: http://localhost:8501
 ```
