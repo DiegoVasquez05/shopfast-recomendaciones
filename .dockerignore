@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+venv
+**/__pycache__
+*.pyc
+data/*.csv
+!data/eval_es_cl.csv
+models
+loadtest
+docs
+tests
+k8s
+nginx/certs

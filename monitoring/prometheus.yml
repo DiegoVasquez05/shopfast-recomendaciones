@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 5s
+rule_files: ["/etc/prometheus/alerts.yml"]
+scrape_configs:
+  - job_name: telecombot-backend
+    dns_sd_configs: [{names: ["backend"], type: A, port: 8000}]
+  - job_name: siebel-worker
+    dns_sd_configs: [{names: ["siebel-worker"], type: A, port: 9101}]

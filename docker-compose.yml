@@ -1,0 +1,145 @@
+# TelecomBot AI — stack completo (piloto en una EC2).
+#   make train                       # genera models/ (una vez, o semanalmente)
+#   make certs && docker compose up -d --build
+#   docker compose --profile monitoring up -d    # + Prometheus y Grafana
+x-backend-env: &backend-env
+  ENVIRONMENT: ${ENVIRONMENT:-piloto}
+  REDIS_URL: redis://redis:6379/0
+  DATABASE_URL: postgresql://${POSTGRES_USER:-telecombot}:${POSTGRES_PASSWORD:-telecombot}@postgres:5432/telecombot
+  QUEUE_BACKEND: ${QUEUE_BACKEND:-rabbitmq}
+  RABBITMQ_URL: amqp://${RABBITMQ_USER:-telecombot}:${RABBITMQ_PASSWORD:-telecombot}@rabbitmq:5672/%2F
+  SQS_QUEUE_URL: ${SQS_QUEUE_URL:-}
+  SIEBEL_BASE_URL: ${SIEBEL_BASE_URL:-http://siebel-mock:9000}
+  SIEBEL_USER: ${SIEBEL_USER:-telecombot}
+  SIEBEL_PASSWORD: ${SIEBEL_PASSWORD:-dev-password}
+  SIEBEL_SECRET_ARN: ${SIEBEL_SECRET_ARN:-}
+  PII_SALT: ${PII_SALT:-dev-salt-cambiar}
+  MESSAGE_ENCRYPTION_KEY: ${MESSAGE_ENCRYPTION_KEY:-}
+  AWS_REGION: ${AWS_REGION:-us-east-1}
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on: [backend, dashboard]
+    restart: unless-stopped
+
+  backend:
+    build: {context: ., args: {WITH_LLM: "${WITH_LLM:-false}"}}
+    image: telecombot/backend:1.0.0
+    environment:
+      <<: *backend-env
+      SAGEMAKER_ENDPOINT: ${SAGEMAKER_ENDPOINT:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-extractive}
+      BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:-anthropic.claude-3-haiku-20240307-v1:0}
+      SENTIMENT_PROVIDER: ${SENTIMENT_PROVIDER:-lexicon}
+      OAUTH_CLIENTS: ${OAUTH_CLIENTS:-mobile-app:dev-mobile-secret,dashboard:dev-dashboard-secret,agent-console:dev-agent-secret,loadtest:dev-loadtest-secret}
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-cambiar-en-produccion-32b}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-dev-verify-token}
+      WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET:-dev-whatsapp-secret}
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      PILOT_PERCENTAGE: ${PILOT_PERCENTAGE:-10}
+      PILOT_ALLOWLIST: ${PILOT_ALLOWLIST:-demo,wa}
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-120}
+    volumes:
+      - ./models:/app/models:ro
+      - ${HOME}/.aws:/home/appuser/.aws:ro    # credenciales AWS Academy (SageMaker/Comprehend/Bedrock)
+    expose: ["8000"]
+    deploy:
+      replicas: ${BACKEND_REPLICAS:-2}
+      resources: {limits: {cpus: "1.0", memory: 1G}}
+    depends_on:
+      redis: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      postgres: {condition: service_healthy}
+    restart: unless-stopped
+
+  siebel-worker:
+    image: telecombot/backend:1.0.0
+    command: ["python", "-m", "app.workers.siebel_worker"]
+    environment:
+      <<: *backend-env
+      SERVICE_NAME: telecombot-siebel-worker
+      WORKER_THREADS: "4"
+    deploy: {replicas: 2}
+    depends_on:
+      backend: {condition: service_started}
+      rabbitmq: {condition: service_healthy}
+    healthcheck: {disable: true}
+    restart: unless-stopped
+
+  siebel-mock:
+    image: telecombot/backend:1.0.0
+    command: ["uvicorn", "app.siebel_mock.main:app", "--host", "0.0.0.0", "--port", "9000"]
+    environment:
+      SIEBEL_USER: ${SIEBEL_USER:-telecombot}
+      SIEBEL_PASSWORD: ${SIEBEL_PASSWORD:-dev-password}
+      SIEBEL_LATENCY_MS: ${SIEBEL_LATENCY_MS:-80}
+    expose: ["9000"]
+    ports: ["127.0.0.1:9000:9000"]     # admin/chaos solo desde la EC2 (túnel SSH)
+    depends_on: [backend]
+    healthcheck: {disable: true}
+    restart: unless-stopped
+
+  dashboard:
+    build: {context: ., dockerfile: docker/dashboard.Dockerfile}
+    image: telecombot/dashboard:1.0.0
+    environment:
+      API_URL: http://backend:8000
+      DASHBOARD_CLIENT_ID: dashboard
+      DASHBOARD_CLIENT_SECRET: ${DASHBOARD_CLIENT_SECRET:-dev-dashboard-secret}
+      SIEBEL_ADMIN_URL: http://siebel-mock:9000
+    expose: ["8501"]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru", "--appendonly", "yes"]
+    volumes: [redisdata:/data]
+    healthcheck: {test: ["CMD", "redis-cli", "ping"], interval: 5s, retries: 10}
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-telecombot}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-telecombot}
+    volumes: [rabbitdata:/var/lib/rabbitmq]
+    ports: ["127.0.0.1:15672:15672"]   # consola de administración (túnel SSH)
+    healthcheck: {test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"], interval: 10s, retries: 12}
+    restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-telecombot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-telecombot}
+      POSTGRES_DB: telecombot
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-telecombot}"], interval: 5s, retries: 10}
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    profiles: ["monitoring"]
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports: ["127.0.0.1:9090:9090"]
+  grafana:
+    image: grafana/grafana:11.1.0
+    profiles: ["monitoring"]
+    environment: {GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD:-admin}", GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana/", GF_SERVER_SERVE_FROM_SUB_PATH: "true"}
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["127.0.0.1:3000:3000"]
+
+volumes:
+  pgdata:
+  redisdata:
+  rabbitdata:

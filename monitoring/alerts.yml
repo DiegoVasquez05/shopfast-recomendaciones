@@ -1,0 +1,23 @@
+groups:
+  - name: telecombot-slo
+    rules:
+      - alert: LatenciaTurnoP95Alta
+        expr: histogram_quantile(0.95, sum(rate(telecombot_turn_latency_seconds_bucket[5m])) by (le)) > 2.5
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: "P95 de latencia por turno > 2,5 s (SLA 3 s)"}
+      - alert: TasaHandoffAlta
+        expr: sum(rate(telecombot_handoffs_total[15m])) / sum(rate(telecombot_resolutions_total[15m])) > 0.4
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "Más del 40% de los turnos termina en handoff: revisar NLU/corpus"}
+      - alert: SiebelCircuitoAbierto
+        expr: max(telecombot_siebel_circuit_open) == 1
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "Circuit Breaker de Siebel abierto"}
+      - alert: ErroresHTTP5xx
+        expr: sum(rate(telecombot_http_request_seconds_count{status=~"5.."}[5m])) / sum(rate(telecombot_http_request_seconds_count[5m])) > 0.01
+        for: 5m
+        labels: {severity: critical}
+        annotations: {summary: "Más de 1% de respuestas 5xx"}

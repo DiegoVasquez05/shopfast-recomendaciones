@@ -1,0 +1,228 @@
+{
+ "title": "TelecomBot AI",
+ "uid": "telecombot",
+ "schemaVersion": 39,
+ "refresh": "5s",
+ "time": {
+  "from": "now-30m",
+  "to": "now"
+ },
+ "panels": [
+  {
+   "id": 1,
+   "type": "timeseries",
+   "title": "Latencia P95 por turno (SLA 3 s)",
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": "Prometheus",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    }
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.95, sum(rate(telecombot_turn_latency_seconds_bucket[1m])) by (le))",
+     "legendFormat": "",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "type": "timeseries",
+   "title": "Latencia P95 por etapa",
+   "gridPos": {
+    "x": 12,
+    "y": 0,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": "Prometheus",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    }
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.95, sum(rate(telecombot_stage_latency_seconds_bucket[1m])) by (le, stage))",
+     "legendFormat": "{{stage}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "type": "timeseries",
+   "title": "Turnos por resolución",
+   "gridPos": {
+    "x": 0,
+    "y": 8,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": "Prometheus",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum(rate(telecombot_resolutions_total[1m])) by (resolution)",
+     "legendFormat": "{{resolution}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "type": "stat",
+   "title": "Tasa de handoff",
+   "gridPos": {
+    "x": 12,
+    "y": 8,
+    "w": 6,
+    "h": 8
+   },
+   "datasource": "Prometheus",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum(rate(telecombot_handoffs_total[5m])) / sum(rate(telecombot_resolutions_total[5m]))",
+     "legendFormat": "",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 5,
+   "type": "stat",
+   "title": "Circuit Breaker Siebel (1=abierto)",
+   "gridPos": {
+    "x": 18,
+    "y": 8,
+    "w": 6,
+    "h": 8
+   },
+   "datasource": "Prometheus",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    }
+   },
+   "targets": [
+    {
+     "expr": "max(telecombot_siebel_circuit_open)",
+     "legendFormat": "",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 6,
+   "type": "timeseries",
+   "title": "Resultados Siebel",
+   "gridPos": {
+    "x": 0,
+    "y": 16,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": "Prometheus",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum(rate(telecombot_siebel_requests_total[1m])) by (status)",
+     "legendFormat": "{{status}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 7,
+   "type": "bargauge",
+   "title": "Intenciones más frecuentes",
+   "gridPos": {
+    "x": 12,
+    "y": 16,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": "Prometheus",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    }
+   },
+   "targets": [
+    {
+     "expr": "topk(8, sum(increase(telecombot_intents_total[1h])) by (intent))",
+     "legendFormat": "{{intent}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 8,
+   "type": "timeseries",
+   "title": "HTTP por estado",
+   "gridPos": {
+    "x": 0,
+    "y": 24,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": "Prometheus",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "reqps"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum(rate(telecombot_http_request_seconds_count[1m])) by (status)",
+     "legendFormat": "{{status}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "id": 9,
+   "type": "timeseries",
+   "title": "WebSockets activos",
+   "gridPos": {
+    "x": 12,
+    "y": 24,
+    "w": 12,
+    "h": 8
+   },
+   "datasource": "Prometheus",
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    }
+   },
+   "targets": [
+    {
+     "expr": "sum(telecombot_websocket_connections) by (kind)",
+     "legendFormat": "{{kind}}",
+     "refId": "A"
+    }
+   ]
+  }
+ ]
+}
