@@ -1,0 +1,68 @@
+text,intent
+oe necesito saber cuanto me queda de saldo en la linea,check_balance
+cuantas lucas debo a la fecha?,check_balance
+me quedan datos o ya me los fundí todos,check_balance
+tengo algo pendiente por pagar?,check_balance
+cuánto le debo a ustedes,check_balance
+la boleta de noviembre salió carísima por qué,check_invoice
+wena quería ver el monto de la cuenta de este mes,check_invoice
+para cuándo vence lo que tengo que pagar,check_invoice
+no cacho el cobro que aparece en mi cuenta,check_invoice
+me pueden mandar la boleta al mail,get_invoice
+no encuentro dónde bajar la boleta en pdf,get_invoice
+necesito un respaldo de la cuenta de octubre,get_invoice
+qué plan tengo contratado yo?,check_plan
+cuántos gigas incluye lo que tengo,check_plan
+mi plan trae minutos libres?,check_plan
+me gustaría un plan con más datos,change_plan
+tienen algún plan más económico que el mío,change_plan
+quiero subirle la velocidad al internet de la casa,change_plan
+qué ofertas de fibra tienen,change_plan
+desde ayer que no me funciona el internet,technical_support
+el wifi se cae a cada rato es insoportable,technical_support
+la tele está sin señal en todos los canales,technical_support
+no puedo hacer llamadas desde el celu,technical_support
+el router tiene una luz roja parpadeando,technical_support
+el internet anda más lento que tortuga,technical_support
+quiero cambiarme a ustedes pero mantener mi número,portability
+cuánto demora pasar mi número desde otra compañía,portability
+qué necesito para la portabilidad,portability
+viajo a brasil la otra semana como uso el celular allá,roaming
+sale muy caro usar datos afuera?,roaming
+cómo prendo el roaming,roaming
+se puede pagar con transferencia o solo tarjeta?,check_payment_methods
+dónde puedo ir a pagar la cuenta,check_payment_methods
+puedo dejar el pago automático con mi tarjeta,check_payment_methods
+pagué ayer y todavía me aparece como deuda,payment_issue
+me hicieron el cargo dos veces en la tarjeta,payment_issue
+el pago en la web me tiró error,payment_issue
+esto es el colmo voy a ir al sernac,complaint
+llevo 3 días sin internet y nadie me soluciona nada,complaint
+pésima la atención de ustedes quiero reclamar,complaint
+estoy hasta la tusa con los cortes de luz del modem,complaint
+pásame con alguien de verdad,contact_human_agent
+no quiero hablar con una máquina,contact_human_agent
+necesito que me atienda un ejecutivo,contact_human_agent
+a qué hora abren la sucursal,contact_customer_service
+cuál es el fono de atención,contact_customer_service
+quiero darme de baja,delete_account
+cómo cancelo el servicio de televisión,delete_account
+quiero terminar con ustedes y cortar el contrato,delete_account
+me cobran algo si termino el contrato antes,check_cancellation_fee
+hay que pagar multa por salirse,check_cancellation_fee
+olvidé la contraseña de la app,recover_password
+no puedo entrar a la sucursal virtual porque no me acuerdo la clave,recover_password
+quiero actualizar mi correo de contacto,edit_account
+me cambié de casa y quiero cambiar la dirección,edit_account
+me tienen que devolver la plata de los días sin servicio,get_refund
+quiero que me reembolsen el cobro mal hecho,get_refund
+cuándo llega el técnico a instalar,track_order
+en qué va mi pedido del celular,track_order
+quiero contratar internet para mi casa,place_order
+quiero comprar un teléfono nuevo,place_order
+quiero dejar un comentario sobre la atención,review
+wena wena,greeting
+holaa buenas tardes,greeting
+buenos días,greeting
+ya muchas gracias,goodbye
+eso sería todo chao,goodbye
