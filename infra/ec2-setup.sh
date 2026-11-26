@@ -7,7 +7,7 @@ REPO="${REPO:-https://github.com/DiegoVasquez05/shopfast-recomendaciones.git}"
 DIR="${DIR:-$HOME/telecombot}"
 
 sudo dnf update -y
-sudo dnf install -y docker git openssl python3.11 python3.11-pip
+sudo dnf install -y docker git openssl make python3.11 python3.11-pip
 sudo systemctl enable --now docker
 sudo usermod -aG docker "$USER"
 sudo mkdir -p /usr/local/lib/docker/cli-plugins
