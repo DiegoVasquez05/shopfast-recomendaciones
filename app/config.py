@@ -12,7 +12,11 @@ from pathlib import Path
 
 
 def _env(name: str, default: str = "") -> str:
-    return os.getenv(name, default)
+    """Lee una variable ignorando espacios y comentarios pegados al valor (VAR=   # comentario)."""
+    value = os.getenv(name, default).strip()
+    if value.startswith("#"):
+        return default
+    return value
 
 
 def _bool(name: str, default: bool) -> bool:
