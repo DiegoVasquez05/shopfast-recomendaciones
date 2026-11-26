@@ -1,0 +1,33 @@
+# TelecomBot AI en Kubernetes (EKS en producción / Minikube para pruebas). Coherente con EP2 §7.4.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: telecombot
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: telecombot-config, namespace: telecombot}
+data:
+  ENVIRONMENT: "piloto"
+  QUEUE_BACKEND: "rabbitmq"          # en EKS: "sqs" + SQS_QUEUE_URL
+  SIEBEL_BASE_URL: "http://siebel-mock:9000"
+  LLM_PROVIDER: "extractive"         # "bedrock" si el modelo está habilitado en la cuenta
+  SENTIMENT_PROVIDER: "lexicon"      # "comprehend" para Amazon Comprehend
+  PILOT_PERCENTAGE: "10"
+  INTENT_THRESHOLD: "0.45"
+  AWS_REGION: "us-east-1"
+  MODELS_DIR: "/app/models"
+---
+# Ejemplo: en EKS los valores reales vienen de AWS Secrets Manager (External Secrets / CSI driver).
+apiVersion: v1
+kind: Secret
+metadata: {name: telecombot-secrets, namespace: telecombot}
+type: Opaque
+stringData:
+  REDIS_URL: "redis://redis:6379/0"
+  DATABASE_URL: "postgresql://telecombot:CAMBIAR@postgres:5432/telecombot"
+  RABBITMQ_URL: "amqp://telecombot:CAMBIAR@rabbitmq:5672/%2F"
+  JWT_SECRET: "CAMBIAR-por-openssl-rand-hex-32"
+  PII_SALT: "CAMBIAR"
+  SIEBEL_PASSWORD: "CAMBIAR"
+  OAUTH_CLIENTS: "mobile-app:CAMBIAR,dashboard:CAMBIAR,agent-console:CAMBIAR,loadtest:CAMBIAR"

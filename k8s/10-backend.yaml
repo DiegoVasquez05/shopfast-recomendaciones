@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: backend, namespace: telecombot, labels: {app: backend}}
+spec:
+  replicas: 3
+  selector: {matchLabels: {app: backend}}
+  strategy: {type: RollingUpdate, rollingUpdate: {maxUnavailable: 0, maxSurge: 1}}
+  template:
+    metadata:
+      labels: {app: backend}
+      annotations: {prometheus.io/scrape: "true", prometheus.io/port: "8000", prometheus.io/path: "/metrics"}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 1000}
+      affinity:
+        podAntiAffinity:            # réplicas repartidas entre zonas de disponibilidad (Multi-AZ)
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector: {matchLabels: {app: backend}}
+                topologyKey: topology.kubernetes.io/zone
+      initContainers:               # descarga los modelos versionados desde S3 (en Minikube: hostPath)
+        - name: fetch-models
+          image: amazon/aws-cli:2.17.0
+          command: ["sh", "-c", "aws s3 sync s3://$(MODELS_BUCKET)/telecombot/models/latest /models || true"]
+          env: [{name: MODELS_BUCKET, value: "telecombot-modelos"}]
+          volumeMounts: [{name: models, mountPath: /models}]
+      containers:
+        - name: backend
+          image: telecombot/backend:1.0.0
+          ports: [{containerPort: 8000}]
+          envFrom: [{configMapRef: {name: telecombot-config}}, {secretRef: {name: telecombot-secrets}}]
+          resources:
+            requests: {cpu: 500m, memory: 512Mi}
+            limits: {cpu: "1", memory: 1Gi}
+          readinessProbe: {httpGet: {path: /ready, port: 8000}, periodSeconds: 10, failureThreshold: 3}
+          livenessProbe: {httpGet: {path: /health, port: 8000}, initialDelaySeconds: 20, periodSeconds: 15}
+          volumeMounts: [{name: models, mountPath: /app/models, readOnly: true}]
+      volumes: [{name: models, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: backend, namespace: telecombot}
+spec:
+  selector: {app: backend}
+  ports: [{port: 8000, targetPort: 8000}]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: backend, namespace: telecombot}
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: backend}
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource: {name: cpu, target: {type: Utilization, averageUtilization: 60}}
+  behavior:
+    scaleUp: {stabilizationWindowSeconds: 30}
+    scaleDown: {stabilizationWindowSeconds: 300}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: backend, namespace: telecombot}
+spec:
+  minAvailable: 2
+  selector: {matchLabels: {app: backend}}

@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: siebel-worker, namespace: telecombot}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: siebel-worker}}
+  template:
+    metadata:
+      labels: {app: siebel-worker}
+      annotations: {prometheus.io/scrape: "true", prometheus.io/port: "9101"}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 1000}
+      containers:
+        - name: worker
+          image: telecombot/backend:1.0.0
+          command: ["python", "-m", "app.workers.siebel_worker"]
+          envFrom: [{configMapRef: {name: telecombot-config}}, {secretRef: {name: telecombot-secrets}}]
+          env: [{name: SERVICE_NAME, value: telecombot-siebel-worker}]
+          resources:
+            requests: {cpu: 250m, memory: 256Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+---
+# En EKS con SQS se recomienda escalar por profundidad de cola (KEDA, trigger aws-sqs-queue).
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: siebel-worker, namespace: telecombot}
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: siebel-worker}
+  minReplicas: 2
+  maxReplicas: 6
+  metrics: [{type: Resource, resource: {name: cpu, target: {type: Utilization, averageUtilization: 70}}}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: siebel-mock, namespace: telecombot}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: siebel-mock}}
+  template:
+    metadata: {labels: {app: siebel-mock}}
+    spec:
+      containers:
+        - name: siebel-mock
+          image: telecombot/backend:1.0.0
+          command: ["uvicorn", "app.siebel_mock.main:app", "--host", "0.0.0.0", "--port", "9000"]
+          env: [{name: SIEBEL_PASSWORD, valueFrom: {secretKeyRef: {name: telecombot-secrets, key: SIEBEL_PASSWORD}}}]
+          ports: [{containerPort: 9000}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: siebel-mock, namespace: telecombot}
+spec:
+  selector: {app: siebel-mock}
+  ports: [{port: 9000, targetPort: 9000}]

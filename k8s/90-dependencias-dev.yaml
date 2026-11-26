@@ -1,0 +1,56 @@
+# SOLO para Minikube/pruebas. En EKS se usan servicios administrados:
+# ElastiCache (Redis), Amazon MQ o SQS (cola) y RDS PostgreSQL Multi-AZ con pgvector.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: redis, namespace: telecombot}
+spec:
+  selector: {matchLabels: {app: redis}}
+  template:
+    metadata: {labels: {app: redis}}
+    spec: {containers: [{name: redis, image: "redis:7-alpine", ports: [{containerPort: 6379}]}]}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: redis, namespace: telecombot}
+spec: {selector: {app: redis}, ports: [{port: 6379}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: rabbitmq, namespace: telecombot}
+spec:
+  selector: {matchLabels: {app: rabbitmq}}
+  template:
+    metadata: {labels: {app: rabbitmq}}
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3.13-management-alpine
+          env: [{name: RABBITMQ_DEFAULT_USER, value: telecombot}, {name: RABBITMQ_DEFAULT_PASS, value: CAMBIAR}]
+          ports: [{containerPort: 5672}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: rabbitmq, namespace: telecombot}
+spec: {selector: {app: rabbitmq}, ports: [{port: 5672}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: postgres, namespace: telecombot}
+spec:
+  selector: {matchLabels: {app: postgres}}
+  template:
+    metadata: {labels: {app: postgres}}
+    spec:
+      containers:
+        - name: postgres
+          image: pgvector/pgvector:pg16
+          env:
+            - {name: POSTGRES_USER, value: telecombot}
+            - {name: POSTGRES_PASSWORD, value: CAMBIAR}
+            - {name: POSTGRES_DB, value: telecombot}
+          ports: [{containerPort: 5432}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: postgres, namespace: telecombot}
+spec: {selector: {app: postgres}, ports: [{port: 5432}]}
