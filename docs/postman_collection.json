@@ -1,0 +1,523 @@
+{
+ "info": {
+  "name": "TelecomBot AI",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+  "description": "Colección para la demo de la EP3. Ejecutar primero 'OAuth2 token'."
+ },
+ "variable": [
+  {
+   "key": "base_url",
+   "value": "https://localhost"
+  },
+  {
+   "key": "client_secret",
+   "value": "dev-dashboard-secret"
+  },
+  {
+   "key": "token",
+   "value": ""
+  },
+  {
+   "key": "session_id",
+   "value": ""
+  }
+ ],
+ "item": [
+  {
+   "name": "Health",
+   "request": {
+    "method": "GET",
+    "header": [],
+    "url": {
+     "raw": "{{base_url}}/health",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "health"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('200', () => pm.response.to.have.status(200));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Ready (dependencias)",
+   "request": {
+    "method": "GET",
+    "header": [],
+    "url": {
+     "raw": "{{base_url}}/ready",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "ready"
+     ]
+    }
+   }
+  },
+  {
+   "name": "OAuth2 token (client credentials)",
+   "request": {
+    "method": "POST",
+    "header": [],
+    "url": {
+     "raw": "{{base_url}}/oauth/token",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "oauth",
+      "token"
+     ]
+    },
+    "body": {
+     "mode": "urlencoded",
+     "urlencoded": [
+      {
+       "key": "grant_type",
+       "value": "client_credentials"
+      },
+      {
+       "key": "client_id",
+       "value": "dashboard"
+      },
+      {
+       "key": "client_secret",
+       "value": "{{client_secret}}"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.collectionVariables.set('token', pm.response.json().access_token);",
+       "pm.test('token', () => pm.expect(pm.response.json().access_token).to.be.a('string'));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "NLU: predecir intención (SageMaker)",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/api/v1/nlu/predict",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "api",
+      "v1",
+      "nlu",
+      "predict"
+     ]
+    },
+    "auth": {
+     "type": "bearer",
+     "bearer": [
+      {
+       "key": "token",
+       "value": "{{token}}",
+       "type": "string"
+      }
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\n  \"text\": \"no tengo señal en el celu po\"\n}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('intención', () => pm.expect(pm.response.json().intent).to.eql('technical_support'));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Chat: saludo",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/api/v1/chat/messages",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "api",
+      "v1",
+      "chat",
+      "messages"
+     ]
+    },
+    "auth": {
+     "type": "bearer",
+     "bearer": [
+      {
+       "key": "token",
+       "value": "{{token}}",
+       "type": "string"
+      }
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\n  \"user_id\": \"demo\",\n  \"customer_id\": \"C-1001\",\n  \"text\": \"wena po\"\n}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.collectionVariables.set('session_id', pm.response.json().session_id);"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Chat: saldo (Siebel)",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/api/v1/chat/messages",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "api",
+      "v1",
+      "chat",
+      "messages"
+     ]
+    },
+    "auth": {
+     "type": "bearer",
+     "bearer": [
+      {
+       "key": "token",
+       "value": "{{token}}",
+       "type": "string"
+      }
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\n  \"user_id\": \"demo\",\n  \"customer_id\": \"C-1001\",\n  \"session_id\": \"{{session_id}}\",\n  \"text\": \"cuánto debo de la boleta?\"\n}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('< 3 s', () => pm.expect(pm.response.json().latency_ms).to.be.below(3000));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "Chat: soporte técnico (RAG + caso)",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/api/v1/chat/messages",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "api",
+      "v1",
+      "chat",
+      "messages"
+     ]
+    },
+    "auth": {
+     "type": "bearer",
+     "bearer": [
+      {
+       "key": "token",
+       "value": "{{token}}",
+       "type": "string"
+      }
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\n  \"user_id\": \"demo\",\n  \"customer_id\": \"C-1001\",\n  \"session_id\": \"{{session_id}}\",\n  \"text\": \"el internet anda lento y el modem tiene luz roja\"\n}"
+    }
+   }
+  },
+  {
+   "name": "Chat: reclamo (handoff)",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/api/v1/chat/messages",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "api",
+      "v1",
+      "chat",
+      "messages"
+     ]
+    },
+    "auth": {
+     "type": "bearer",
+     "bearer": [
+      {
+       "key": "token",
+       "value": "{{token}}",
+       "type": "string"
+      }
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\n  \"user_id\": \"demo\",\n  \"customer_id\": \"C-1002\",\n  \"text\": \"esto es una estafa, voy a reclamar al sernac\"\n}"
+    }
+   }
+  },
+  {
+   "name": "Actualizaciones asíncronas de la sesión",
+   "request": {
+    "method": "GET",
+    "header": [],
+    "url": {
+     "raw": "{{base_url}}/api/v1/chat/sessions/{{session_id}}/updates",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "api",
+      "v1",
+      "chat",
+      "sessions",
+      "{{session_id}}",
+      "updates"
+     ]
+    },
+    "auth": {
+     "type": "bearer",
+     "bearer": [
+      {
+       "key": "token",
+       "value": "{{token}}",
+       "type": "string"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "RAG: búsqueda semántica",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/api/v1/rag/search",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "api",
+      "v1",
+      "rag",
+      "search"
+     ]
+    },
+    "auth": {
+     "type": "bearer",
+     "bearer": [
+      {
+       "key": "token",
+       "value": "{{token}}",
+       "type": "string"
+      }
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\n  \"query\": \"cómo activo el roaming\",\n  \"k\": 3\n}"
+    }
+   }
+  },
+  {
+   "name": "Modelo: métricas",
+   "request": {
+    "method": "GET",
+    "header": [],
+    "url": {
+     "raw": "{{base_url}}/api/v1/model",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "api",
+      "v1",
+      "model"
+     ]
+    },
+    "auth": {
+     "type": "bearer",
+     "bearer": [
+      {
+       "key": "token",
+       "value": "{{token}}",
+       "type": "string"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "KPIs",
+   "request": {
+    "method": "GET",
+    "header": [],
+    "url": {
+     "raw": "{{base_url}}/api/v1/metrics/summary",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "api",
+      "v1",
+      "metrics",
+      "summary"
+     ]
+    },
+    "auth": {
+     "type": "bearer",
+     "bearer": [
+      {
+       "key": "token",
+       "value": "{{token}}",
+       "type": "string"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Handoffs",
+   "request": {
+    "method": "GET",
+    "header": [],
+    "url": {
+     "raw": "{{base_url}}/api/v1/handoffs",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "api",
+      "v1",
+      "handoffs"
+     ]
+    },
+    "auth": {
+     "type": "bearer",
+     "bearer": [
+      {
+       "key": "token",
+       "value": "{{token}}",
+       "type": "string"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "Privacidad: exportar datos",
+   "request": {
+    "method": "GET",
+    "header": [],
+    "url": {
+     "raw": "{{base_url}}/api/v1/privacy/users/demo",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "api",
+      "v1",
+      "privacy",
+      "users",
+      "demo"
+     ]
+    },
+    "auth": {
+     "type": "bearer",
+     "bearer": [
+      {
+       "key": "token",
+       "value": "{{token}}",
+       "type": "string"
+      }
+     ]
+    }
+   }
+  }
+ ]
+}
